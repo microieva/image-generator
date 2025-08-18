@@ -1,0 +1,60 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+*.egg
+*.so
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# ML/Data files
+*.pth
+*.pt
+*.bin
+*.h5
+*.npy
+*.npz
+
+# HuggingFace cache
+.cache/
+.huggingface/
+
+# Generated images
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Python testing
+.pytest_cache/
