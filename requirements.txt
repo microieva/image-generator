@@ -1,9 +1,18 @@
-fastapi==0.95.2
-uvicorn==0.22.0
+# Core (CUDA 11.8 for Py3.9 compatibility)
+torch==2.0.1+cu118
+torchvision==0.15.2+cu118
+--extra-index-url https://download.pytorch.org/whl/cu118
+
+# HuggingFace Stack
 diffusers==0.19.3
 transformers==4.31.0
-torch==2.0.1      
-torchvision==0.15.2   
 accelerate==0.21.0
-jinja2==3.1.2
-huggingface_hub==0.16.4
+huggingface-hub==0.16.4
+
+# Web
+fastapi==0.95.2
+uvicorn==0.22.0
+
+# Utilities
+numpy==1.23.5 
+pillow==9.5.0

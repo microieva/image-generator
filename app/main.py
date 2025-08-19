@@ -33,7 +33,8 @@ def load_model():
         pipe = StableDiffusionPipeline.from_pretrained(
             "stabilityai/stable-diffusion-2-1",
             torch_dtype=torch_dtype,
-            safety_checker=None,  # Disable if NSFW content isn't a concern
+            safety_checker=None, 
+            use_xformers=False,
             variant="fp16" if torch_dtype == torch.float16 else None
         )
         
