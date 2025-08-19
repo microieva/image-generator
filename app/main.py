@@ -40,7 +40,8 @@ def load_model():
         
         # Optimizations
         if DEVICE == "cuda":
-            pipe.enable_xformers_memory_efficient_attention()
+            torch.backends.cuda.enable_flash_sdp(True)  
+            torch.backends.cuda.enable_mem_efficient_sdp(True) 
         elif DEVICE == "cpu":
             pipe.enable_attention_slicing()
             
