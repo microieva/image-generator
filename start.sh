@@ -33,9 +33,4 @@ uvicorn app.main:app \
     --host 0.0.0.0 \
     --port 8000 \
     --workers 1 \
-    --timeout-keep-alive 300 \      # 5 minutes for long generations
-    --log-level info \              # Balanced logging
-    --no-access-log \               # Disable redundant access logs
-    --limit-concurrency 10 \        # Prevent GPU OOM
-    --ws-max-size 50 \              # MB (for large payloads)
-    --header content-security-policy:"default-src 'self'"  # Basic security
+    --timeout-keep-alive 300 
