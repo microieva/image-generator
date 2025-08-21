@@ -44,7 +44,7 @@ app = FastAPI()
 # templates = Jinja2Templates(directory="app/templates")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://localhost:5173"],
+    allow_origins=["http://localhost:5174", "http://localhost:5173", "https://react-image-generator-five.vercel.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
