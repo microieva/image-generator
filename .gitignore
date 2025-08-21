@@ -58,3 +58,6 @@ Thumbs.db
 
 # Python testing
 .pytest_cache/
+
+# Local
+local.txt
