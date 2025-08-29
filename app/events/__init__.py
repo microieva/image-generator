@@ -1,8 +1,10 @@
 from .startup import startup
+from .generate_stream import create_sse_event
 #from .shutdown import on_shutdown, cleanup_models, close_database_connections
 
 __all__ = [
     'startup',
+    'create_sse_event',
     # 'on_shutdown',
     # 'load_models_on_startup',
     # 'cleanup_models',

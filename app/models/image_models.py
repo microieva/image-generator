@@ -31,3 +31,8 @@ class GenerationStatus(BaseModel):
     cancelled_at: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+
+class GenerationResult(BaseModel):
+    task_id: str
+    image_url: str        
+    prompt: str

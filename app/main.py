@@ -1,11 +1,11 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from concurrent.futures import ThreadPoolExecutor
 
 from .config import DEVICE, EXECUTOR
 from .routes import status
 from .routes import generate_image 
+# from .routes import generate_image_stream
 from .routes import cancel_generation
 from .routes import get_generation_status
 from .routes import list_tasks
@@ -28,6 +28,7 @@ app.state.executor = EXECUTOR
 # --- Routes ---
 app.include_router(status)
 app.include_router(generate_image)
+# app.include_router(generate_image_stream)
 app.include_router(get_generation_status)
 app.include_router(list_tasks)
 app.include_router(cancel_generation)
@@ -38,3 +39,4 @@ app.add_event_handler("startup", startup)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    

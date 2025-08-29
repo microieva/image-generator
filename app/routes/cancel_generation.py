@@ -33,7 +33,8 @@ async def cancel_generation(request: Request, cancel_request: CancelRequest, bac
     print(f"📋 Task {task_id} current status: {current_status}")
     
     if current_status in ['completed', 'cancelled', 'error']:
-        print(f"ℹ️ Task {task_id} is already {current_status}")
+        prompt = ongoing_tasks[task_id]['request']['prompt']
+        print(f"ℹ️ Task {task_id} [prompt: {prompt}] is already {current_status}")
         raise HTTPException(status_code=400, detail=f"Task is already {current_status}")
     
     # Mark task as cancelled
