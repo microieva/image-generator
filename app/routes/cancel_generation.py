@@ -26,6 +26,7 @@ async def cancel_generation(request: Request, cancel_request: CancelRequest, bac
     
     if task_id not in ongoing_tasks:
         print(f"❌ Task {task_id} not found in ongoing_tasks")
+        print(f"\nRemaining Tasks: {len(ongoing_tasks)} \n{ongoing_tasks.items()}, \nOngoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo.get('status') == 'processing']}")
         raise HTTPException(status_code=404, detail="Task not found or already completed")
     
     # Check if task is already completed or cancelled
@@ -44,6 +45,8 @@ async def cancel_generation(request: Request, cancel_request: CancelRequest, bac
     
     logging.info(f"Cancellation requested for task {task_id}")
     print(f"✅ Cancellation marked for task {task_id}")
+    print(f"\nRemaining Tasks: {len(ongoing_tasks)} \n{ongoing_tasks.items()},\nOngoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo['status'] == 'processing']}")
+    print(f"\nBackground tasks: {background_tasks.tasks}\n")
     
     return JSONResponse({
         "status": "success",

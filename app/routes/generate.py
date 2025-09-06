@@ -81,6 +81,9 @@ def generate_image_task(app, task_id: str, generate_request: GenerateRequest, re
             }
             prompt = ongoing_tasks[task_id]['request']['prompt']
             print(f"✅ Task {task_id} [prompt: {prompt}] completed successfully")
+            # adding deletion from ongoing_tasks
+            del ongoing_tasks[task_id]
+            print(f"\nRemaining Tasks: {len(ongoing_tasks)} \n{ongoing_tasks.items()}, \nOngoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo.get('status') == 'processing']}")
 
     except InterruptedError:
         prompt = ongoing_tasks[task_id]['request']['prompt']
@@ -98,13 +101,19 @@ def generate_image_task(app, task_id: str, generate_request: GenerateRequest, re
             ongoing_tasks[task_id]['completed_at'] = datetime.now().isoformat()
     
     finally:
-        # todo: remove task after some time
+        print(f"\nRemaining Tasks: {len(ongoing_tasks)}, Ongoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo['status'] == 'processing']}")
+
+        if task_id in ongoing_tasks:
+            print(f"Removing task {task_id} with status: {ongoing_tasks[task_id].get('status')}")
+            del ongoing_tasks[task_id]
+            print(f"\nRemaining Tasks: {len(ongoing_tasks)} \n{ongoing_tasks.items()}, \nOngoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo.get('status') == 'processing']}")
         pass
 
 @router.post("/generate")
 async def generate_image(request: Request, generate_request: GenerateRequest, background_tasks: BackgroundTasks):
     """Endpoint to start image generation with cancellation support"""
     try:
+        ongoing_tasks = request.app.state.ongoing_tasks
         # ===== DEBUG: Print received request =====
         print("\n" + "="*50)
         print("📨 RECEIVED GENERATION REQUEST:")
@@ -113,16 +122,16 @@ async def generate_image(request: Request, generate_request: GenerateRequest, ba
         print(f"Guidance Scale: {generate_request.guidance_scale}")
         print(f"Seed: {generate_request.seed}")
         print("="*50 + "\n")
+        print(f"\nCurrent Tasks: {len(ongoing_tasks)} \n{ongoing_tasks.items()}, \nOngoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo.get('status') == 'processing']}")
         # ===== END DEBUG =====
-
         task_id = str(uuid.uuid4())
-        ongoing_tasks = request.app.state.ongoing_tasks
         ongoing_tasks[task_id] = {
             'status': 'pending',
             'progress': 0.0,
             'created_at': datetime.now().isoformat(),
             'request': generate_request.dict(),
-            'cancelled': False
+            'cancelled': False,
+            'prompt': generate_request.prompt
         }
         
         background_tasks.add_task(generate_image_task, request.app, task_id, generate_request, request)
@@ -130,7 +139,6 @@ async def generate_image(request: Request, generate_request: GenerateRequest, ba
         logging.info(f"Started generation task {task_id} for prompt: {generate_request.prompt}")
         print(f"📋 Task {task_id} added to background tasks")
         
-        # Return immediately with task ID - don't wait for generation to complete
         return JSONResponse({
             "status": "started",
             "task_id": task_id,
@@ -161,7 +169,7 @@ async def get_generation_status(request: Request, task_id: str):
     
     task_data = ongoing_tasks[task_id]
     
-    return {
+    return JSONResponse({
         "task_id": task_id,
         "status": task_data['status'],
         "progress": task_data.get('progress'),
@@ -169,11 +177,12 @@ async def get_generation_status(request: Request, task_id: str):
         "started_at": task_data.get('started_at'),
         "completed_at": task_data.get('completed_at'),
         "cancelled": task_data.get('cancelled', False),
-        "has_result": 'result' in task_data
-    }
+        "result": 'result' in task_data,
+        "prompt": task_data['prompt']
+    })
 
 @router.get("/tasks")
-async def list_tasks(request: Request):
+async def list_tasks(request: Request, background_tasks: BackgroundTasks):
     """List all ongoing and recent tasks"""
 
     ongoing_tasks = request.app.state.ongoing_tasks
@@ -227,9 +236,6 @@ async def get_generation_stream(request: Request, background_tasks: BackgroundTa
                     break
                 
                 await asyncio.sleep(0.5)
-
-        except asyncio.CancelledError:
-            print(f"Client disconnected from stream for task {task_id}")
                 
         except Exception as e:
             yield create_sse_event({

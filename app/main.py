@@ -16,7 +16,11 @@ print(f"\n🚀 Using device: {DEVICE.upper()}")
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://localhost:5173", "https://react-image-generator-five.vercel.app/"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://localhost:3001", 
+        "https://react-image-generator-five.vercel.app/", 
+        "http://172.20.10.5:3000/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
