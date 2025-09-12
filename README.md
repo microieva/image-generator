@@ -50,7 +50,7 @@ venv\Scripts\activate     # Windows
 ```
 ### 3. Install Dependencies
 ```bash
-pip install -r requirements.txt
+pip install -r local.txt
 ```
 
 ### 4. Download Models

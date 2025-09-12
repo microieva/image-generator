@@ -2,18 +2,15 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.utils import lifespan
+
 from .config import DEVICE, EXECUTOR
-from .routes import status
-from .routes import generate_image 
-# from .routes import generate_image_stream
-from .routes import cancel_generation
-from .routes import get_generation_status
-from .routes import list_tasks
-from .events import startup
+from .routes import generate_image, cancel_generation, get_generation_stream, get_tasks, get_generation_status, delete_tasks
 
 print(f"\n🚀 Using device: {DEVICE.upper()}")
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -26,21 +23,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.state.ongoing_tasks = {}
 app.state.executor = EXECUTOR
 
-# --- Routes ---
-app.include_router(status)
 app.include_router(generate_image)
-# app.include_router(generate_image_stream)
+app.include_router(get_generation_stream)
 app.include_router(get_generation_status)
-app.include_router(list_tasks)
 app.include_router(cancel_generation)
-
-# --- Events ---
-app.add_event_handler("startup", startup)
+app.include_router(delete_tasks)
+app.include_router(get_tasks)
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    

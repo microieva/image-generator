@@ -1,55 +1,75 @@
 import logging
-from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
+from app.core.task_manager import TaskManager, TaskStatus
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from app.models.image_models import CancelRequest
-from app.models.model_loader import load_model
-from datetime import datetime
-
 
 router = APIRouter()
-pipe = load_model()
-ongoing_tasks = {}
 
 @router.post("/cancel-generation")
-async def cancel_generation(request: Request, cancel_request: CancelRequest, background_tasks: BackgroundTasks):
-    """Endpoint to cancel an ongoing generation"""
-    
-    # ===== DEBUG: Print cancellation request =====
-    print("\n" + "="*50)
-    print("⏹️ RECEIVED CANCELLATION REQUEST:")
-    print(f"Task ID: {cancel_request.task_id}")
-    print("="*50 + "\n")
-    # ===== END DEBUG =====
-    
-    ongoing_tasks = request.app.state.ongoing_tasks
+async def cancel_generation(request: Request, cancel_request: CancelRequest):
+    """Endpoint to cancel an ongoing generation with detailed response"""
+
+    task_manager: TaskManager = request.app.state.task_manager
     task_id = cancel_request.task_id
+
+    print(f"\n⏹️ Cancellation request for task: {task_id}")
+
+    task_info = task_manager.get_task_info(task_id)
     
-    if task_id not in ongoing_tasks:
-        print(f"❌ Task {task_id} not found in ongoing_tasks")
-        print(f"\nRemaining Tasks: {len(ongoing_tasks)} \n{ongoing_tasks.items()}, \nOngoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo.get('status') == 'processing']}")
-        raise HTTPException(status_code=404, detail="Task not found or already completed")
+    if not task_info:
+        raise HTTPException(
+            status_code=404, 
+            detail={
+                "message": "Task not found",
+                "task_id": task_id,
+                "suggestion": "Check /tasks endpoint for available tasks"
+            }
+        )
+
+    if task_info.status == TaskStatus.CANCELLED:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Task already cancelled",
+                "task_id": task_id,
+                "current_status": TaskStatus.CANCELLED
+            }
+        )
     
-    # Check if task is already completed or cancelled
-    current_status = ongoing_tasks[task_id]['status']
-    print(f"📋 Task {task_id} current status: {current_status}")
+    if task_info.status == TaskStatus.COMPLETED:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Task already completed",
+                "task_id": task_id,
+                "current_status": TaskStatus.COMPLETED,
+                "result_available": task_info.result is not None
+            }
+        )
     
-    if current_status in ['completed', 'cancelled', 'error']:
-        prompt = ongoing_tasks[task_id]['request']['prompt']
-        print(f"ℹ️ Task {task_id} [prompt: {prompt}] is already {current_status}")
-        raise HTTPException(status_code=400, detail=f"Task is already {current_status}")
+    if task_info.status == TaskStatus.ERROR:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Task already failed",
+                "task_id": task_id,
+                "current_status": TaskStatus.ERROR,
+                "error": task_info.error
+            }
+        )
+
+    cancellation_successful = task_manager.cancel_task(task_id)
     
-    # Mark task as cancelled
-    ongoing_tasks[task_id]['cancelled'] = True
-    ongoing_tasks[task_id]['status'] = 'cancelling'
-    ongoing_tasks[task_id]['cancelled_at'] = datetime.now().isoformat()
-    
-    logging.info(f"Cancellation requested for task {task_id}")
-    print(f"✅ Cancellation marked for task {task_id}")
-    print(f"\nRemaining Tasks: {len(ongoing_tasks)} \n{ongoing_tasks.items()},\nOngoing: {[tid for tid, tinfo in ongoing_tasks.items() if tinfo['status'] == 'processing']}")
-    print(f"\nBackground tasks: {background_tasks.tasks}\n")
-    
+    if cancellation_successful:
+        logging.info(f"Successfully cancelled task {task_id} - Prompt: {task_info.prompt}")
+        message = "Task cancelled successfully"
+    else:
+        logging.warning(f"Task {task_id} could not be cancelled (may have completed during request)")
+        message = "Task cancellation attempted, but it may have already completed"
+
     return JSONResponse({
         "status": "success",
-        "message": "Cancellation requested",
+        "message": message,
         "task_id": task_id
     })

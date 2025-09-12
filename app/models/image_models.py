@@ -1,12 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
-
-class CancelRequest(BaseModel):
-    task_id: str
-
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-from datetime import datetime
 
 class GenerateRequest(BaseModel):
     prompt: str
