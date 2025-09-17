@@ -1,6 +1,5 @@
 import asyncio
-from typing import Set, Dict, Any, Optional
-from concurrent.futures import Future
+from typing import Dict, Any, Optional
 from datetime import datetime
 import uuid
 import logging

@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 from typing import Optional
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+from datetime import datetime
+
 
 class GenerateRequest(BaseModel):
     prompt: str
@@ -12,6 +14,11 @@ class GenerateRequest(BaseModel):
     guidance_scale: float = 7.5
     steps: int = 20
     seed: Optional[int] = None
+
+class ImagesParams(BaseModel):
+    page: int = 1
+    limit: int = 12 
+    task_id: Optional[str] = None
 
 class CancelRequest(BaseModel):
     task_id: str
@@ -31,3 +38,17 @@ class GenerationResult(BaseModel):
     task_id: str
     image_url: str        
     prompt: str
+
+class ImageResponse(BaseModel):
+    id: int
+    task_id: str
+    image_url: str
+    prompt: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ImagesSliceResponse(BaseModel):
+    length: int
+    slice: Optional[list[ImageResponse]] = None
