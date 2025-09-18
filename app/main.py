@@ -32,17 +32,7 @@ app.include_router(get_generation_status)
 app.include_router(cancel_generation)
 app.include_router(delete_tasks)
 app.include_router(get_tasks)
-app.include_router(get_images)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Load model on application startup"""
-    print(f"🚀 Starting up application at {datetime.datetime.now()}")
-
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, model_loader.load)
-    
+app.include_router(get_images)  
 
 @app.on_event("shutdown")
 async def shutdown_event():
