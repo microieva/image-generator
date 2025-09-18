@@ -5,8 +5,8 @@ import torch
 import base64
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from app.config import DEVICE
+from app.core.model_loader import load_model
 from app.events.db_events import save_image_to_db, save_task_to_db
-from app.models import load_model
 from app.models import GenerateRequest
 from app.core.task_manager import TaskManager, TaskStatus
 from app.utils.database import get_db
