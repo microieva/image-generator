@@ -1,6 +1,7 @@
 import torch
 from diffusers import StableDiffusionPipeline
 from app.config import DEVICE
+import gc
 
 def load_model():
     try:
@@ -14,7 +15,6 @@ def load_model():
             variant="fp16" if torch_dtype == torch.float16 else None
         )
 
-        # Optimizations
         if DEVICE == "cuda":
             torch.backends.cuda.enable_flash_sdp(True)
             torch.backends.cuda.enable_mem_efficient_sdp(True)
@@ -26,7 +26,7 @@ def load_model():
     except Exception as e:
         print(f"❌ Model loading failed: {str(e)}")
         raise
-    
+
 class ModelLoader:
     def __init__(self):
         self.pipe = None
@@ -35,8 +35,10 @@ class ModelLoader:
     def load(self):
         """Load the model and store it as an instance attribute"""
         if not self.is_loaded:
+            print("🔄 Loading model...")
             self.pipe = load_model()
             self.is_loaded = True
+            print("✅ Model loaded successfully")
         return self.pipe
     
     def get_model(self):
@@ -44,6 +46,36 @@ class ModelLoader:
         if not self.is_loaded:
             return self.load()
         return self.pipe
+    
+    def cleanup(self):
+        """Clean up model resources and free memory"""
+        try:
+            if self.pipe is not None:
+                print("🧹 Cleaning up model resources...")
+                # Move to CPU first if using CUDA to properly release GPU memory
+                if DEVICE != "cpu":
+                    self.pipe = self.pipe.to("cpu")
+                
+                del self.pipe
+                self.pipe = None
+                self.is_loaded = False
+                
+                gc.collect()
+                
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.ipc_collect()
+                
+                print("✅ Model resources cleaned up")
+                return True
+            return False
+        except Exception as e:
+            print(f"❌ Model cleanup failed: {e}")
+            return False
 
-# Create a singleton instance
 model_loader = ModelLoader()
+
+def cleanup_models():
+    """Clean up model resources - to be called by midnight cleanup"""
+    return model_loader.cleanup()
+

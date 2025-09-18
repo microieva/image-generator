@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from sqlalchemy import delete
+from app.models import model_loader
 from app.models.db_models import Image, Task
 from app.utils.database import get_session
 
@@ -36,3 +37,4 @@ async def midnight_cleanup(app: FastAPI):
     
     delete_result = task_manager.delete_all()
     print(f"📊 Deletion result: {delete_result}")
+    model_loader.cleanup_models()
