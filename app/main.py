@@ -1,14 +1,14 @@
-import datetime
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.core.model_loader import cleanup_models
+from app.core import shutdown_manager
 from app.utils import lifespan
 from .config import DEVICE, EXECUTOR
 from .routes import generate_image, cancel_generation, get_generation_stream, get_images, get_tasks, get_generation_status, delete_tasks
 
 print(f"\n🚀 Using device: {DEVICE.upper()}")
+
+shutdown_manager.setup_signal_handlers()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -33,12 +33,6 @@ app.include_router(cancel_generation)
 app.include_router(delete_tasks)
 app.include_router(get_tasks)
 app.include_router(get_images)  
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up model resources on application shutdown"""
-    print(f"🛑 Shutting down application at {datetime.datetime.now()}")
-    cleanup_models()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -33,7 +33,6 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
     db_port = os.getenv('DB_PORT', '1433')
     db_name = os.getenv('DB_NAME', 'ImageGeneratorDB')
     
-    print("=== Attempting to create SQLAlchemy engine ===")
     print(f"DB Server: {db_server}")
     print(f"DB Name: {db_name}")
     print(f"DB User: {db_user}")
@@ -55,7 +54,6 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
             connection_string = f"mssql+pyodbc://?odbc_connect={odbc_connect_str}"
             
             print(f"Connection attempt {attempt + 1}/{max_retries}")
-            print(f"Connection string: {connection_string.replace(db_password, '***')}")
             
             engine = create_engine(
                 connection_string,
@@ -70,7 +68,6 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
                 
                 conn.execute(text("SELECT 1"))
             
-            print("✅ SQLAlchemy engine created successfully!")
             return engine
             
         except Exception as e:
