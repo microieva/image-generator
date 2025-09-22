@@ -17,7 +17,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000", 
         "http://localhost:3001", 
-        "https://react-image-generator-five.vercel.app/", 
+        "https://react-image-generator-kappa.vercel.app/", 
         "http://172.20.10.5:3000/"],
     allow_credentials=True,
     allow_methods=["*"],
