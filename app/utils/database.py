@@ -5,6 +5,7 @@ import time
 from dotenv import load_dotenv
 from sqlalchemy.ext.declarative import declarative_base
 from urllib.parse import quote_plus
+import pyodbc
 
 load_dotenv()
 
@@ -32,6 +33,8 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
     db_server = os.getenv('DB_SERVER', 'localhost')
     db_port = os.getenv('DB_PORT', '1433')
     db_name = os.getenv('DB_NAME', 'ImageGeneratorDB')
+    drivers = [d for d in pyodbc.drivers() if 'ODBC Driver' in d and 'SQL Server' in d]
+    driver_name = sorted(drivers)[-1] if drivers else 'ODBC Driver 17 for SQL Server'
     
     print(f"DB Server: {db_server}")
     print(f"DB Name: {db_name}")
@@ -40,7 +43,7 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
     for attempt in range(max_retries):
         try:
             pyodbc_conn_str = (
-                f'DRIVER={{ODBC Driver 17 for SQL Server}};'
+                f'DRIVER={{{driver_name}}};'
                 f'SERVER={db_server},{db_port};'
                 f'DATABASE={db_name};'
                 f'UID={db_user};'
