@@ -1,9 +1,5 @@
 FROM python:3.9
 
-RUN which apt-get && echo "Apt-get found" || echo "Apt-get NOT found"
-RUN which sh && echo "Shell found" || echo "Shell NOT found"
-RUN ls -la /bin/sh
-
 # RUN apt-get update && apt-get install -y \
 #     curl \
 #     gnupg \
@@ -14,14 +10,14 @@ RUN ls -la /bin/sh
 #     && apt-get update \
 #     && ACCEPT_EULA=Y apt-get install -y msodbcsql17
 
-# WORKDIR /app
+WORKDIR /app
 
-# COPY requirements.txt .
-# RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# COPY app/ ./app/
-# COPY .env .
+COPY app/ ./app/
+COPY .env .
 
-# EXPOSE 8000
+EXPOSE 8000
 
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
