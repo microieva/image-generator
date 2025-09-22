@@ -27,7 +27,45 @@ def get_session():
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
     return SessionLocal()
 
-def create_engine_with_retry(max_retries=5, retry_delay=2):
+def create_database_if_not_exists(db_server, db_port, db_user, db_password, db_name, driver_name):
+    """Create the database if it doesn't exist"""
+    try:
+        # Connect to master database to check/create our target database
+        master_conn_str = (
+            f'DRIVER={{{driver_name}}};'
+            f'SERVER={db_server},{db_port};'
+            f'DATABASE=master;'
+            f'UID={db_user};'
+            f'PWD={db_password};'
+            f'TrustServerCertificate=yes;'
+            f'Connection Timeout=30;'
+        )
+        
+        print(f"🔧 Attempting to create database '{db_name}' if it doesn't exist...")
+        
+        master_engine = create_engine(f"mssql+pyodbc://?odbc_connect={quote_plus(master_conn_str)}")
+        
+        with master_engine.connect() as conn:
+            # Check if database exists
+            result = conn.execute(text(f"SELECT name FROM sys.databases WHERE name = '{db_name}'"))
+            database_exists = result.fetchone()
+            
+            if not database_exists:
+                print(f"📦 Creating database '{db_name}'...")
+                conn.execute(text(f"CREATE DATABASE [{db_name}]"))
+                conn.commit()
+                print(f"✅ Database '{db_name}' created successfully!")
+            else:
+                print(f"✅ Database '{db_name}' already exists.")
+                
+        master_engine.dispose()
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to create database '{db_name}': {e}")
+        return False
+
+def create_engine_with_retry(max_retries=3, retry_delay=2):
     db_user = os.getenv('DB_USER', 'sa')
     db_password = os.getenv('DB_PASSWORD')
     db_server = os.getenv('DB_SERVER', 'localhost')
@@ -39,6 +77,8 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
     print(f"DB Server: {db_server}")
     print(f"DB Name: {db_name}")
     print(f"DB User: {db_user}")
+    
+    database_created = False
     
     for attempt in range(max_retries):
         try:
@@ -56,7 +96,7 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
             odbc_connect_str = quote_plus(pyodbc_conn_str)
             connection_string = f"mssql+pyodbc://?odbc_connect={odbc_connect_str}"
             
-            print(f"Connection attempt {attempt + 1}/{max_retries}")
+            print(f"🔌 Connection attempt {attempt + 1}/{max_retries}")
             
             engine = create_engine(
                 connection_string,
@@ -69,10 +109,36 @@ def create_engine_with_retry(max_retries=5, retry_delay=2):
                 current_db = result.scalar()
                 print(f"✅ Successfully connected to database: {current_db}")
                 
+                # Test basic query
                 conn.execute(text("SELECT 1"))
             
             return engine
             
+        except pyodbc.ProgrammingError as e:
+            # Check if this is a "database not found" error (4060)
+            if '4060' in str(e) and not database_created:
+                print(f"📋 Database not found error detected. Attempting to create database...")
+                if create_database_if_not_exists(db_server, db_port, db_user, db_password, db_name, driver_name):
+                    database_created = True
+                    # Continue to next attempt which should now succeed
+                    if attempt < max_retries - 1:
+                        print(f"🔄 Retrying connection with newly created database...")
+                        continue
+                    else:
+                        print("💥 Failed to connect even after creating database")
+                        raise
+                else:
+                    print("💥 Failed to create database")
+                    raise
+            else:
+                print(f"❌ Connection attempt {attempt + 1}/{max_retries} failed: {e}")
+                if attempt < max_retries - 1:
+                    print(f"⏳ Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    print("💥 All connection attempts failed")
+                    raise
+                    
         except Exception as e:
             print(f"❌ Connection attempt {attempt + 1}/{max_retries} failed: {e}")
             if attempt < max_retries - 1:
@@ -89,12 +155,12 @@ def get_db():
     finally:
         db.close()
 
-
 async def initialize_database():
     try:
         print("🔧 Initializing database connection...")
         engine = get_engine()
         print("✅ Database engine ready")
+        
         try:
             from app.models.db_models import Task, Image
             print(f"-- 📋 Registered tables: {list(Base.metadata.tables.keys())}")
