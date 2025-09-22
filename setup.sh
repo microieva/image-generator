@@ -13,7 +13,10 @@ sudo apt-get install -y \
     curl \
     wget \
     git \
-    software-properties-common
+    software-properties-common \
+    apt-transport-https \
+    ca-certificates \
+    gnupg
 
 # --- Phase 2: Install Python 3.9 if not present ---
 echo ""
@@ -27,7 +30,7 @@ if ! command -v python3.9 &> /dev/null; then
     sudo apt-get update -y
     
     # Install Python 3.9 and the virtual environment module
-    sudo apt-get install -y python3.9 python3.9-venv
+    sudo apt-get install -y python3.9 python3.9-venv python3.9-dev
     echo "✅ Python 3.9 installed."
 else
     echo "✅ Python 3.9 is already installed."
@@ -41,17 +44,20 @@ if ! command -v docker &> /dev/null; then
     echo "Docker not found. Installing..."
     
     # Add Docker's official GPG key and repository
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
     echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     
     sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
     
     # Add the current user to the docker group to run commands without sudo
     sudo usermod -aG docker $USER
-    echo "✅ Docker installed. Note: You may need to logout and back in for group changes to apply, or run 'newgrp docker'."
+    echo "✅ Docker installed. Note: You may need to logout and back in for group changes to apply."
 else
     echo "✅ Docker is already installed."
 fi
@@ -66,47 +72,88 @@ else
     echo "✅ Docker Compose plugin is already installed."
 fi
 
-# --- Phase 4: Activate group membership without logout ---
-# This attempts to apply the group change for the current session.
-# It's not 100% reliable but works in many cases.
+# --- Phase 4: Refresh Docker Group Permissions ---
 echo ""
 echo "🔄 Refreshing group membership..."
-newgrp docker <<EONG || true
-echo "Inside new shell for group activation."
-EONG
-# Alternatively, just use sudo for the rest of the script if newgrp is problematic.
+
+# Try to refresh group membership without requiring logout
+if ! docker ps &> /dev/null; then
+    echo "Attempting to refresh Docker group permissions..."
+    sudo su - $USER -c "docker ps" || true
+    # Use sudo for the rest of the script if still needed
+    DOCKER_CMD="sudo docker"
+else
+    DOCKER_CMD="docker"
+fi
 
 # --- Phase 5: Build and Start the Docker Stack ---
 echo ""
-echo "🏗️ Phase 4: Building and Launching the Application Stack with Docker Compose..."
+echo "🏗️ Phase 5: Building and Launching the Application Stack with Docker Compose..."
 
-# Use sudo if the user isn't yet in the docker group, otherwise don't.
-# The script detects if 'docker ps' works without sudo.
-if docker ps &> /dev/null; then
-    DOCKER_CMD="docker"
-else
-    echo "Using sudo for Docker commands as current user lacks permissions."
-    DOCKER_CMD="sudo docker"
-fi
+# Stop any existing containers to avoid conflicts
+echo "Stopping any existing containers..."
+$DOCKER_CMD compose down || true
 
-# Build the images
+# Build the images with progress output
 echo "Building Docker images..."
-$DOCKER_CMD compose build
+$DOCKER_CMD compose build --progress plain
 
 # Start the services in detached mode
 echo "Starting containers..."
 $DOCKER_CMD compose up -d
 
+# Wait for containers to be fully started
+echo "Waiting for containers to start up..."
+sleep 10
+
+# --- Phase 6: Verify Deployment ---
+echo ""
+echo "🔍 Phase 6: Verifying Deployment..."
+
+# Check container status
+echo "Container status:"
+$DOCKER_CMD compose ps
+
+# Check if the app container is running
+if $DOCKER_CMD compose ps app | grep -q "Up"; then
+    echo "✅ Application container is running"
+else
+    echo "❌ Application container failed to start"
+    echo "Checking logs..."
+    $DOCKER_CMD compose logs app
+    exit 1
+fi
+
+# Test the application health endpoint (adjust endpoint as needed)
+echo "Testing application health..."
+if curl -f http://localhost:8000/health > /dev/null 2>&1 || \
+   curl -f http://localhost:8000/docs > /dev/null 2>&1 || \
+   curl -f http://localhost:8000/ > /dev/null 2>&1; then
+    echo "✅ Application is responding on port 8000"
+else
+    echo "⚠️ Application might still be starting up..."
+    echo "Current logs:"
+    $DOCKER_CMD compose logs app --tail=20
+fi
+
+# --- Phase 7: Display Final Information ---
 echo ""
 echo "🎉 Deployment Complete!"
-echo "   - Your FastAPI server should be running on port 8000."
-echo "   - The MS SQL Server is running on port 1433."
 echo ""
-echo "📋 Check the status of your containers:"
-echo "   $DOCKER_CMD compose ps"
+echo "📊 Services Status:"
+$DOCKER_CMD compose ps
 echo ""
-echo "📜 View the logs for the app service:"
-echo "   $DOCKER_CMD compose logs app -f"
+echo "🌐 Application URLs:"
+echo "   - FastAPI Server: http://$(curl -s ifconfig.me):8000"
+echo "   - API Documentation: http://$(curl -s ifconfig.me):8000/docs"
+echo "   - MS SQL Server: localhost:1433"
 echo ""
-echo "🛑 To stop the application:"
-echo "   $DOCKER_CMD compose down"
+echo "📋 Useful Commands:"
+echo "   View all logs:        $DOCKER_CMD compose logs -f"
+echo "   View app logs:        $DOCKER_CMD compose logs app -f"
+echo "   View database logs:   $DOCKER_CMD compose logs db -f"
+echo "   Stop application:     $DOCKER_CMD compose down"
+echo "   Restart application:  $DOCKER_CMD compose restart"
+echo ""
+echo "⏰ Application is starting up. It might take a few moments to be fully ready."
+echo "   Check the logs with: $DOCKER_CMD compose logs app -f"
