@@ -94,32 +94,6 @@ class ModelLoader:
             return False
         finally:
             print("🧹 EXITING cleanup method", flush=True)
-    
-    # def cleanup(self):
-    #     """Clean up model resources and free memory"""
-    #     try:
-    #         if self.pipe is not None:
-    #             print("🧹 Cleaning up model resources...", flush=True)
-    #             # Move to CPU first if using CUDA to properly release GPU memory
-    #             if DEVICE != "cpu":
-    #                 self.pipe = self.pipe.to("cpu")
-                
-    #             del self.pipe
-    #             self.pipe = None
-    #             self.is_loaded = False
-                
-    #             gc.collect()
-                
-    #             if torch.cuda.is_available():
-    #                 torch.cuda.empty_cache()
-    #                 torch.cuda.ipc_collect()
-                
-    #             print("✅ Model resources cleaned up", flush=True)
-    #             return True
-    #         return False
-    #     except Exception as e:
-    #         print(f"❌ Model cleanup failed: {e}", flush=True)
-    #         return False
 
 model_loader = ModelLoader()
 

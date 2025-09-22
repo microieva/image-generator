@@ -5,7 +5,7 @@ import torch
 import base64
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from app.config import DEVICE
-from app.core.model_loader import load_model
+from app.core.model_loader import model_loader
 from app.events.db_events import save_image_to_db, save_task_to_db
 from app.models import GenerateRequest
 from app.core.task_manager import TaskManager, TaskStatus
@@ -14,7 +14,7 @@ from app.utils.image_processing import resize_image_base64
 from sqlalchemy.orm import Session
 
 router = APIRouter()
-pipe = load_model()
+pipe = model_loader.get_model()
 
 def generate_image_task(app, task_id: str, generate_request: GenerateRequest, db: Session = Depends(get_db)):
     """Background task for image generation"""
