@@ -1,10 +1,10 @@
 FROM python:3.9
 
 RUN apt-get update && apt-get install -y \
-    curl \
+    wget \
     gnupg \
-    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && wget -qO- https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && wget -q -O /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/debian/11/prod.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql18 \
     && apt-get install -y unixodbc unixodbc-dev \
