@@ -9,6 +9,7 @@ from app.core.model_loader import model_loader
 from app.events.db_events import save_image_to_db, save_task_to_db
 from app.models import GenerateRequest
 from app.core.task_manager import TaskManager, TaskStatus
+from app.models.image_models import GenerationResponse
 from app.utils.database import get_db
 from app.utils.image_processing import resize_image_base64
 from sqlalchemy.orm import Session
@@ -97,7 +98,7 @@ def generate_image_task(app, task_id: str, generate_request: GenerateRequest, db
         if final_info:
             print(f"🏁 Task {task_id} final status: {final_info.status}")
 
-@router.post("/generate")
+@router.post("/generate", response_model=GenerationResponse)
 async def generate_image(request: Request, generate_request: GenerateRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Endpoint to start image generation using TaskManager only"""
     try:

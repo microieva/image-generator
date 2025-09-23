@@ -1,6 +1,6 @@
 import asyncio
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from app.events.generate_stream import create_sse_event
 from app.core.task_manager import TaskManager, TaskStatus
 

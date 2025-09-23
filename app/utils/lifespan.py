@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from app.core import model_loader, shutdown_manager
 from app.core.scheduler import TaskScheduler
 from app.core.task_manager import TaskManager
-from app.events.cleanup import midnight_cleanup
+from app.events.cleanup import db_weekly_cleanup, midnight_cleanup
 from app.utils.database import initialize_database
 
 @asynccontextmanager
@@ -14,7 +14,8 @@ async def lifespan(app: FastAPI):
     app.state.scheduler = TaskScheduler()    
     await initialize_database()
     
-    app.state.scheduler.start_scheduler(app, midnight_cleanup)
+    app.state.scheduler.start_midnight_scheduler(app, midnight_cleanup)
+    app.state.scheduler.start_weekly_scheduler(app, db_weekly_cleanup)
     
     if hasattr(model_loader, 'cleanup'):
         shutdown_manager.add_cleanup_handler(model_loader.cleanup)

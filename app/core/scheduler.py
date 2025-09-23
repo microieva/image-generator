@@ -9,7 +9,7 @@ class TaskScheduler:
     def __init__(self):
         self.scheduler: Optional[AsyncIOScheduler] = None
 
-    def start_scheduler(self, app, cleanup_function):
+    def start_midnight_scheduler(self, app, cleanup_function):
         """Start the scheduler with midnight cleanup."""
         try:
             self.scheduler = AsyncIOScheduler()
@@ -27,7 +27,28 @@ class TaskScheduler:
             logger.info("⏰ Scheduled task cleanup: Daily at 00:00 (midnight)")
             
         except Exception as e:
-            logger.error(f"Failed to start scheduler: {e}")
+            logger.error(f"Failed to start midnight scheduler: {e}")
+            raise
+
+    def start_weekly_scheduler(self, app, cleanup_function):
+        """Start the scheduler with weekly cleanup."""
+        try:
+            self.scheduler = AsyncIOScheduler()
+            self.scheduler.add_job(
+                cleanup_function,
+                trigger=CronTrigger(day_of_week='sun', hour=23, minute=59, second=59),
+                args=[app],
+                id="weekly_db_cleanup",
+                name="Empty all tables on sundays",
+                replace_existing=True
+            )
+            
+            self.scheduler.start()
+            logger.info("✅ Db scheduler started successfully")
+            logger.info("⏰ Scheduled db cleanup: every sunday at 23:59:59")
+            
+        except Exception as e:
+            logger.error(f"Failed to start weekly scheduler: {e}")
             raise
 
     def shutdown_scheduler(self):

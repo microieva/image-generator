@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from app.core.task_manager import TaskManager
+from app.models.image_models import TasksResponse
 
 router = APIRouter()
 
-@router.get("/tasks")
+@router.get("/tasks", response_model=TasksResponse)
 async def get_tasks(request: Request):
     """List all ongoing and recent tasks"""
     task_manager: TaskManager = request.app.state.task_manager

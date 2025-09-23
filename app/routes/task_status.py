@@ -2,10 +2,11 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from app.core.task_manager import TaskManager, TaskStatus
+from app.models.image_models import TaskStatusResponse
 
 router = APIRouter()
 
-@router.get("/status/{task_id}")
+@router.get("/status/{task_id}", response_model=TaskStatusResponse)
 async def get_generation_status(request: Request, task_id: str):
     """Check the status of a generation task"""
     task_manager: TaskManager = request.app.state.task_manager

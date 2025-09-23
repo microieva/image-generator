@@ -1,12 +1,12 @@
 
-from fastapi import APIRouter, BackgroundTasks, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from app.core.task_manager import TaskManager
 
 router = APIRouter()
 
 @router.delete("/delete-tasks")
-async def delete_tasks(request: Request, background_tasks: BackgroundTasks):
+async def delete_tasks(request: Request):
     """Endpoint to delete all tasks that are not processing"""
     
     task_manager: TaskManager = request.app.state.task_manager

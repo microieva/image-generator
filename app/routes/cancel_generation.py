@@ -2,11 +2,11 @@ import logging
 from app.core.task_manager import TaskManager, TaskStatus
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from app.models.image_models import CancelRequest
+from app.models.image_models import CancelRequest, CancellationResponse
 
 router = APIRouter()
 
-@router.post("/cancel-generation")
+@router.post("/cancel-generation", response_model=CancellationResponse)
 async def cancel_generation(request: Request, cancel_request: CancelRequest):
     """Endpoint to cancel an ongoing generation with detailed response"""
 
