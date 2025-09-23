@@ -5,7 +5,6 @@ set -e # Exit immediately if any command fails
 echo "🚀 Starting Automated Deployment for AI Image Generator"
 echo "Target: $(lsb_release -ds || cat /etc/*release || uname -om) 2>/dev/null"
 
-# --- Phase 1: System Update and Prerequisites ---
 echo ""
 echo "🔧 Phase 1: Updating System and Installing Prerequisites..."
 sudo apt-get update -y
@@ -18,7 +17,6 @@ sudo apt-get install -y \
     ca-certificates \
     gnupg
 
-# --- Phase 2: Install Python 3.9 if not present ---
 echo ""
 echo "🐍 Phase 2: Ensuring Python 3.9 is installed..."
 
@@ -36,14 +34,12 @@ else
     echo "✅ Python 3.9 is already installed."
 fi
 
-# --- Phase 3: Install Docker and Docker Compose ---
 echo ""
 echo "🐳 Phase 3: Ensuring Docker and Docker Compose are installed..."
 
 if ! command -v docker &> /dev/null; then
     echo "Docker not found. Installing..."
     
-    # Add Docker's official GPG key and repository
     sudo install -m 0755 -d /etc/apt/keyrings
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
     sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -55,14 +51,12 @@ if ! command -v docker &> /dev/null; then
     sudo apt-get update -y
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
     
-    # Add the current user to the docker group to run commands without sudo
     sudo usermod -aG docker $USER
     echo "✅ Docker installed. Note: You may need to logout and back in for group changes to apply."
 else
     echo "✅ Docker is already installed."
 fi
 
-# Check for Docker Compose Plugin
 if ! docker compose version &> /dev/null; then
     echo "Docker Compose plugin not found. Installing..."
     sudo apt-get update -y
@@ -72,11 +66,9 @@ else
     echo "✅ Docker Compose plugin is already installed."
 fi
 
-# --- Phase 4: Refresh Docker Group Permissions ---
 echo ""
 echo "🔄 Refreshing group membership..."
 
-# Try to refresh group membership without requiring logout
 if ! docker ps &> /dev/null; then
     echo "Attempting to refresh Docker group permissions..."
     sudo su - $USER -c "docker ps" || true
@@ -86,35 +78,27 @@ else
     DOCKER_CMD="docker"
 fi
 
-# --- Phase 5: Build and Start the Docker Stack ---
 echo ""
 echo "🏗️ Phase 5: Building and Launching the Application Stack with Docker Compose..."
 
-# Stop any existing containers to avoid conflicts
 echo "Stopping any existing containers..."
 $DOCKER_CMD compose down || true
 
-# Build the images with progress output
 echo "Building Docker images..."
 $DOCKER_CMD compose build --progress plain
 
-# Start the services in detached mode
 echo "Starting containers..."
 $DOCKER_CMD compose up -d
 
-# Wait for containers to be fully started
 echo "Waiting for containers to start up..."
 sleep 10
 
-# --- Phase 6: Verify Deployment ---
 echo ""
 echo "🔍 Phase 6: Verifying Deployment..."
 
-# Check container status
 echo "Container status:"
 $DOCKER_CMD compose ps
 
-# Check if the app container is running
 if $DOCKER_CMD compose ps app | grep -q "Up"; then
     echo "✅ Application container is running"
 else
@@ -124,7 +108,6 @@ else
     exit 1
 fi
 
-# Test the application health endpoint (adjust endpoint as needed)
 echo "Testing application health..."
 if curl -f http://localhost:8000/health > /dev/null 2>&1 || \
    curl -f http://localhost:8000/docs > /dev/null 2>&1 || \
@@ -136,7 +119,6 @@ else
     $DOCKER_CMD compose logs app --tail=20
 fi
 
-# --- Phase 7: Display Final Information ---
 echo ""
 echo "🎉 Deployment Complete!"
 echo ""
