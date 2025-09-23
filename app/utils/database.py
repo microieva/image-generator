@@ -27,10 +27,17 @@ def get_session():
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
     return SessionLocal()
 
-def create_database_if_not_exists(db_server, db_port, db_user, db_password, db_name, driver_name):
+def create_database_if_not_exists():
     """Create the database if it doesn't exist"""
+
+    db_user = os.getenv('DB_USER', 'sa')
+    db_password = os.getenv('DB_PASSWORD')
+    db_server = os.getenv('DB_SERVER', 'localhost')
+    db_port = os.getenv('DB_PORT', '1433')
+    db_name = os.getenv('DB_NAME', 'ImageGeneratorDB')
+    drivers = [d for d in pyodbc.drivers() if 'ODBC Driver' in d and 'SQL Server' in d]
+    driver_name = sorted(drivers)[-1] if drivers else 'ODBC Driver 17 for SQL Server'
     try:
-        # Connect to master database to check/create our target database
         master_conn_str = (
             f'DRIVER={{{driver_name}}};'
             f'SERVER={db_server},{db_port};'
@@ -46,8 +53,7 @@ def create_database_if_not_exists(db_server, db_port, db_user, db_password, db_n
         master_engine = create_engine(f"mssql+pyodbc://?odbc_connect={quote_plus(master_conn_str)}")
         
         with master_engine.connect() as conn:
-            # Check if database exists
-            result = conn.execute(text(f"SELECT name FROM sys.databases WHERE name = '{db_name}'"))
+            result = conn.execute(text("SELECT name FROM sys.databases WHERE name = :db_name"), {'db_name': db_name})
             database_exists = result.fetchone()
             
             if not database_exists:
