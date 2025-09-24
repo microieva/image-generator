@@ -23,7 +23,7 @@ jobs:
           
           # Stop existing containers
           echo "🛑 Stopping existing containers..."
-          docker-compose down || echo "⚠️  No containers to stop (first deployment?)"
+          docker compose down || echo "⚠️  No containers to stop (first deployment?)"
           
           # Pull latest code
           echo "📥 Pulling latest code..."
@@ -37,7 +37,7 @@ jobs:
           # Verify deployment
           echo "🔍 Verifying deployment..."
           sleep 10  # Wait for containers to start
-          docker-compose ps
+          docker compose ps
           
           echo "🎉 Deployment completed successfully!"
         EOF
