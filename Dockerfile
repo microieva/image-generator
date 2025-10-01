@@ -16,8 +16,7 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -qO /etc/apt/keyrings/microsoft-prod.gpg https://packages.microsoft.com/keys/microsoft.asc \
-    && echo "deb [signed-by=/etc/apt/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-tools.list \
+RUN echo "deb [signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/20.04/prod focal main" > /etc/apt/sources.list.d/mssql-tools.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y mssql-tools \
     && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
