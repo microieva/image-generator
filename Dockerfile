@@ -16,6 +16,12 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && wget -qO /etc/apt/sources.list.d/mssql-tools.list "https://packages.microsoft.com/config/ubuntu/20.04/prod.list" \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y mssql-tools \
+    && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+
 WORKDIR /app
 
 COPY requirements.txt .
@@ -24,6 +30,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY .env .
 
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 8000
 
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -17,7 +17,7 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           set -e  # Exit on any error
-          cd /root/image-generator
+          cd /root/projects/image-generator
           
           echo "🚀 Starting deployment process..."
           
@@ -36,7 +36,7 @@ jobs:
           
           # Verify deployment
           echo "🔍 Verifying deployment..."
-          sleep 10  # Wait for containers to start
+          sleep 20  # Wait for containers to start
           docker compose ps
           
           echo "🎉 Deployment completed successfully!"
